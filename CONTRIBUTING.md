@@ -18,6 +18,8 @@
 * Avoid line breaks when possible, but if you cannot make it fit, add line breaks as late as
   possible.
 * When breaking on binary operators, put the operator at the beginning of the new line.
+** This does not apply to the `:` used for inheritance in COM interfaces, which should remain at
+   the end of the previous line.
 * Do not use aligned indentation. Indentation should always be block indentation.
 * Always use spaces for indentation.
 * Blank lines are evil.
@@ -104,6 +106,8 @@ pub const CLSCTX_INPROC: CLSCTX = CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER;
 ```
 
 ## GUIDs
+
+* Numbers should be padded with zeros to ensure consistent width.
 
 ```Rust
 DEFINE_GUID!{GUID_DEVCLASS_SENSOR,
@@ -228,6 +232,11 @@ BITFIELD!{USB_HUB_STATUS AsUshort16: USHORT [
 
 * The uuid should always be lowercase hex.
 * If the COM interface does not have a uuid then use a uuid of all zeroes.
+* Uuid numbers should be padded with zeros to ensure consistent width.
+* Sometimes a COM interface will have two methods with identical names (an overloaded method). If
+  the two methods are both named `Foo`, then name them `Foo_1` and `Foo_2`. In addition,
+  overloaded methods must appear in *reverse* order to comply with the COM binary interface. See
+  #523 for more details.
 
 ```Rust
 RIDL!{#[uuid(0x6d4865fe, 0x0ab8, 0x4d91, 0x8f, 0x62, 0x5d, 0xd6, 0xbe, 0x34, 0xa3, 0xe0)]
@@ -250,21 +259,32 @@ interface IDWriteFontFileStream(IDWriteFontFileStreamVtbl): IUnknown(IUnknownVtb
 }}
 ```
 
+## COM classes
+
+* The uuid should always be lowercase hex.
+* Uuid numbers should be padded with zeros to ensure consistent width.
+
+```C
+class DECLSPEC_UUID("D9F6EE60-58C9-458B-88E1-2F908FD7F87C")
+SpDataKey;
+```
+
+```Rust
+RIDL!{#[uuid(0xd9f6ee60, 0x58c9, 0x458b, 0x88, 0xe1, 0x2f, 0x90, 0x8f, 0xd7, 0xf8, 0x7c)]
+class SpDataKey;}
+```
+
 ## Organization of code
 
 * All definitions go into the source file that directly maps to the header the definition is from.
     * Stuff in `src/winrt` is special and has its own namespaced organization.
 * Definitions are defined in the same order as they are in the original header.
-* The `lib` folder is legacy from 0.2 and will eventually disappear once all definitions have been
-  moved to their correct locations.
 
 ## Dealing with duplicates
 
 * Sometimes two headers will define the same thing.
-    * If the duplicated thing is a simple typedef or function definition or constant, then
+    * If the duplicated thing is a simple typedef or extern function or constant, then
       duplicate the definition.
-    * If the duplicated thing is a struct or COM interface or union, then choose one header to be
-      the canonical source of truth for that definition and publicly re-export the thing from the
-      other header.
-* Sometimes a COM interface will have two methods with identical names. If the two methods are both
-  named `Foo`, then name them `Foo1` and `Foo2`.
+    * If the duplicated thing is a struct or union or COM interface or COM class, then choose one
+      header to be the canonical source of truth for that definition and publicly re-export the
+      thing from the other header.
